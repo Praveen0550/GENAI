@@ -1,0 +1,199 @@
+#7B
+from openai import OpenAI
+from google.colab import userdata
+
+api_key = userdata.get('Raja')
+
+client = OpenAI(
+    api_key=api_key,
+    base_url="https://openrouter.ai/api/v1"
+)
+
+ARTICLE = """
+Artificial Intelligence and Machine Learning in Modern Healthcare
+
+Artificial intelligence (AI) and machine learning (ML) are transforming healthcare by enabling more accurate diagnoses, personalized treatment plans, and improved patient outcomes. These technologies analyze vast amounts of medical data, including patient records, imaging scans, and genetic information, to identify patterns that human doctors might miss.
+
+Machine learning algorithms can detect diseases earlier than traditional methods. For example, AI systems analyzing medical images can identify cancerous tumors with 95% accuracy, compared to 85% accuracy for human radiologists. Deep learning models process electronic health records to predict patient risks for conditions like heart disease, diabetes, and sepsis.
+
+AI-powered diagnostic tools help physicians make faster, more informed decisions. Natural language processing systems extract insights from medical literature, while predictive analytics forecast patient admission rates and resource needs. Virtual health assistants provide patients with 24/7 support, answering questions and monitoring symptoms.
+
+However, challenges remain. Data privacy concerns, regulatory hurdles, and the need for human oversight limit AI adoption. Healthcare providers must balance technological innovation with ethical considerations, ensuring patient data protection and maintaining the human touch in medical care.
+
+Despite these challenges, AI and ML continue to revolutionize healthcare, offering hope for more efficient, accurate, and accessible medical services worldwide.
+"""
+
+# Iteration 2: Add word count and format constraints
+PROMPT_2 = f"""
+Summarize this article about AI in healthcare: {ARTICLE}
+
+CONSTRAINTS:
+- Maximum 100 words
+- Use bullet point format (3-5 bullets)
+- Focus on key benefits and challenges
+- One sentence per bullet
+"""
+
+def execute_article():
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b:free",
+        messages=[{"role": "user", "content": PROMPT_2}],
+        temperature=0.7
+    )
+    return response.choices[0].message.content
+
+article_output = execute_article()
+
+print("=" * 60)
+print("PROMPT_2")
+print("=" * 60)
+print(f"\nPROMPT: {PROMPT_2}")
+print(f"\nOutput: {article_output}")
+print(f"\nWord count: {len(article_output.split())}")
+print("=" * 60)
+
+
+
+
+
+
+
+
+ #11B
+!pip install -q langchain langchain-core langchain-community langchain-op2enai langchain-huggingface sentence-transformers python-dotenv
+from getpass import getpass
+API_KEY = getpass("Enter your OpenRouter API key: ")
+with open("config.py", "w") as f: f.write(f'API_KEY = "{API_KEY}"')
+#Program 11b
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from config import API_KEY
+
+# Initialize LLM
+llm = ChatOpenAI(
+    model="openrouter/free",
+    temperature=0.7,
+    api_key=API_KEY,
+    base_url="https://openrouter.ai/api/v1"
+)
+
+# Create prompt template with input variable
+prompt_template = """
+You are a helpful assistant. Please summarize the following text in exactly 2 sentences.
+
+Text: {text}
+
+Instructions:
+- Exactly 2 sentences
+- Clear and concise
+- Capture main points
+"""
+
+prompt = PromptTemplate.from_template(prompt_template)
+
+# Create output parser
+parser = StrOutputParser()
+
+# Build LCEL chain
+chain = prompt | llm | parser
+
+# Accept user input
+print("=" * 60)
+print("ENHANCED LCEL CHAIN WITH USER INPUT")
+print("=" * 60)
+
+user_text = input("\nEnter text to summarize: ")
+
+print("\nExecuting chain...")
+
+try:
+    result = chain.invoke({"text": user_text})
+    print(f"\n✓ Chain executed successfully!")
+    print(f"\nSummarized Result:\n{result}")
+    print(f"\nWord Count: {len(result.split())}")
+    print(f"\nSentence Count: {result.count('.') + result.count('!') + result.count('?')}")
+
+except Exception as e:
+    print(f"\n✗ Chain execution failed: {str(e)}")
+    raise
+
+
+
+
+
+#12c pragram
+!pip install -q langchain_community langchain-text-splitters sentence-transformers langchain-huggingface
+from langchain_community.document_loaders import TextLoader
+from langchain_text_splitters import CharacterTextSplitter
+
+docs = TextLoader('/documents.txt').load()
+chunks = CharacterTextSplitter(
+    chunk_size=200,
+    chunk_overlap=50,
+    separator='\n\n'
+).split_documents(docs)
+
+print("Documents:", len(docs) )
+print("Chunks:", len(chunks))
+
+for i, ch in enumerate(chunks, 1):
+    print(f"\nChunk {i}: {len(ch.page_content)} characters")
+    print(ch.page_content[:150])
+
+sizes = [len(ch.page_content) for ch in chunks]
+if sizes:
+    print("\nAverage:", round(sum(sizes) / len(sizes), 2))
+    print("Minimum:", min(sizes), "| Maximum:", max(sizes))
+    print("Variance:", max(sizes) - min(sizes))
+    if max(sizes) - min(sizes) <= 50:
+      print("\n Chunks are consistent")
+    else:
+       print("\n Chunks have some variance (may need adjustment)")
+
+
+
+
+
+
+
+!pip install -q langchain_community langchain-text-splitters sentence-transformers langchain-huggingface
+# Program 12d
+from langchain_community.document_loaders import TextLoader
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+
+docs = TextLoader("/bin/documents.txt").load()
+chunks = CharacterTextSplitter(
+    chunk_size=200, chunk_overlap=50, separator="\n\n"
+).split_documents(docs)
+
+print("=" * 60, "\nEMBEDDINGS GENERATION")
+
+emb = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
+vectors = emb.embed_documents([c.page_content for c in chunks])
+
+print("\nEmbeddings generated successfully!")
+print("Number of chunks:", len(chunks))
+print("Embedding dimension:", len(vectors[0]))
+
+print("\n" + "-" * 60, "\nEMBEDDING DETAILS")
+for i, (c, v) in enumerate(zip(chunks, vectors), 1):
+    print(f"\nChunk {i}:")
+    print(f"  - Content: {c.page_content[:100]}...")
+    print(f"  - Embedding length: {len(v)}")
+    print(f"  - First 5 values: {v[:5]}")
+
+print("\n" + "-" * 60, "\nCONSISTENCY VERIFICATION")
+lengths = [len(v) for v in vectors]
+same = all(n == lengths[0] for n in lengths)
+
+print("\nAll embeddings same length:", same)
+print("Embedding dimension:", lengths[0])
+print("Number of embeddings:", len(vectors))
+print("\n" + ("✓ All embeddings are consistent" if same
+      else "✗ Embeddings have inconsistent lengths"))
+
+
