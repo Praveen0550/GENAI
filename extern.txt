@@ -1,0 +1,241 @@
+# 5A
+from openai import OpenAI
+from google.colab import userdata
+
+api_key = userdata.get("Raja")
+
+client = OpenAI(
+    api_key=api_key,
+    base_url="https://openrouter.ai/api/v1"
+)
+
+# Refined Prompt with examples & clarification
+ZERO_SHOT_PROMPT = """
+ classify the following text Positive, Negative or Neautral:
+  Text:" i absolutely love this product it works perfectly and has accessed expectations"
+"""
+
+def execute_zero():
+    response = client.chat.completions.create(
+        model="openrouter/free",
+        messages=[
+            {
+                "role": "user",
+                "content": ZERO_SHOT_PROMPT
+            }
+        ],
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content
+
+# Execute
+
+zero_shot_output = execute_zero()
+
+print("=" * 60)
+print("ZERO_SHOT_PROMPT")
+print("=" * 60)
+
+print(f"\nPrompt: {ZERO_SHOT_PROMPT}")
+print(f"\nOutput:\n{zero_shot_output}")
+print(f"\n word count{len(zero_shot_output.split())}")
+print("=" * 60)
+
+
+
+
+# Program 11a: Building a Simple LCEL Chain
+
+!pip install -q langchain langchain-core langchain-openai
+
+from google.colab import userdata
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Get API key from Colab Secrets
+API_KEY = userdata.get('Raja')
+
+if not API_KEY:
+    raise ValueError("API key not found in Colab Secrets.")
+
+# Initialize LLM
+llm = ChatOpenAI(
+    model="openrouter/free",
+    temperature=0.7,
+    api_key=API_KEY,
+    base_url="https://openrouter.ai/api/v1"
+)
+
+# Create fixed instruction
+FIXED_INSTRUCTION = """Summarize this text in exactly 2 sentences:
+Artificial intelligence is transforming healthcare by enabling more accurate diagnoses,
+personalized treatment plans, and improved patient outcomes."""
+
+# Create prompt template
+prompt = PromptTemplate.from_template(FIXED_INSTRUCTION)
+
+# Create output parser
+parser = StrOutputParser()
+
+# Build LCEL chain
+chain = prompt | llm | parser
+
+# Execute chain
+print("=" * 60)
+print("LCEL CHAIN EXECUTION")
+print("=" * 60)
+
+print("\nFixed Instruction:", FIXED_INSTRUCTION)
+print("\nExecuting chain...")
+
+try:
+    result = chain.invoke({})
+
+    print("\nChain executed successfully!")
+    print("\nResult:\n", result)
+    print("\nWord Count:", len(result.split()))
+    print("\nSentence Count:",
+          result.count('.') + result.count('!') + result.count('?'))
+
+except Exception as e:
+    print("\nChain execution failed:", str(e))
+
+
+
+
+
+
+#10a
+from openai import OpenAI
+from google.colab import userdata
+api_key=userdata.get('Raja')
+client = OpenAI(api_key=api_key,base_url="https://openrouter.ai/api/v1")
+# Logic puzzle
+LOGIC_PUZZLE = """
+You have three boxes: A, B, and C.
+
+One box contains gold, one contains silver, and one contains bronze.
+
+Box A says: "The gold is not in box A."
+Box B says: "The gold is in Box C."
+Box C says: "The gold is not in Box B."
+
+Only ONE statement is true. Where is the gold?
+"""
+
+# Direct-answer prompt (baseline)
+DIRECT_PROMPT = f"""
+Solve this logic puzzle:
+
+{LOGIC_PUZZLE}
+
+Give only the box name containing the gold.
+
+"""
+
+
+def execute_direct_answer():
+  response = client.chat.completions.create(
+        model="openrouter/free",
+        messages=[{"role": "user", "content": DIRECT_PROMPT}],
+        temperature=0.2,
+        max_tokens=2000,
+        extra_body={
+            "reasoning": {
+                "max_tokens": 200,
+                "exclude": True
+            }
+        }
+    )
+  print("Selected Model:", response.model)
+  print("Finish Reason:", response.choices[0].finish_reason)
+  return response.choices[0].message.content
+
+
+# Execute
+direct_output = execute_direct_answer()
+
+print("=" * 60)
+print("DIRECT-ANSWER BASELINE OUTPUT")
+print("=" * 60)
+
+print("\nPrompt: (Direct request for answer)")
+print("\nOutput:", direct_output)
+
+if direct_output:
+    print("\nWord Count:", len(direct_output.split()))
+else:
+    print("\nWord Count: 0")
+
+
+
+
+
+
+
+
+# Program 11b: Enhanced LCEL Chain with User Input
+
+!pip install -q langchain langchain-core langchain-openai
+
+from google.colab import userdata
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Get API key from Colab Secrets
+API_KEY = userdata.get('Raja')
+
+if not API_KEY:
+    raise ValueError("API key not found in Colab Secrets.")
+
+# Initialize LLM
+llm = ChatOpenAI(
+    model="openrouter/free",
+    temperature=0.7,
+    api_key=API_KEY,
+    base_url="https://openrouter.ai/api/v1"
+)
+
+# Create prompt template with input variable
+prompt_template = """
+You are a helpful assistant. Please summarize the following text in exactly 2 sentences.
+
+Text: {text}
+
+Instructions:
+- Exactly 2 sentences
+- Clear and concise
+- Capture main points
+"""
+
+prompt = PromptTemplate.from_template(prompt_template)
+
+# Create output parser
+parser = StrOutputParser()
+
+# Build LCEL chain
+chain = prompt | llm | parser
+
+# Accept user input
+print("=" * 60)
+print("ENHANCED LCEL CHAIN WITH USER INPUT")
+print("=" * 60)
+
+user_text = input("\nEnter text to summarize: ")
+
+print("\nExecuting chain...")
+
+try:
+    result = chain.invoke({"text": user_text})
+
+    print("\nChain executed successfully!")
+    print("\nSummarized Result:\n", result)
+    print("\nWord Count:", len(result.split()))
+    print("\nSentence Count:",
+          result.count('.') + result.count('!') + result.count('?'))
+
+except Exception as e:
+    print("\nChain execution failed:", str(e))
